@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena Tarik Tambang ERD v6.0 (Adu Cepat + Sentuh)</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h1 { color: #0d47a1; margin-top: 0; }
+
+        /* --- Arena --- */
+        .team-names {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 10px 5%;
+        }
+        #team-a { color: #d32f2f; }
+        #team-b { color: #1976d2; }
+
+        .arena {
+            display: flex;
+            width: 90%;
+            margin: 15px auto;
+            border: 5px solid #555;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            flex: 1; height: 80px; border-right: 2px dotted #ccc;
+            box-sizing: border-box; display: flex;
+            justify-content: center; align-items: center;
+            font-size: 2.5em; transition: background-color 0.3s;
+        }
+        .step:last-child { border-right: none; }
+        .step.center { background-color: #ffc; }
+        .step.win-zone-a { background-color: #ffebee; }
+        .step.win-zone-b { background-color: #e3f2fd; }
+        .rope {
+            color: #795548;
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce {
+            from { transform: scale(1); } to { transform: scale(1.2); }
+        }
+
+        /* --- Kontainer Kuis --- */
+        #quiz-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 90%;
+            margin: 20px auto;
+            min-height: 400px; /* Lebih tinggi untuk 4 baris tombol */
+        }
+        
+        #difficulty-indicator {
+            font-size: 1em; font-weight: bold; padding: 8px 20px;
+            border-radius: 25px; color: white; margin-bottom: 20px;
+            display: inline-block; transition: all 0.3s;
+        }
+        #difficulty-indicator.easy { background-color: #4CAF50; }
+        #difficulty-indicator.hard { background-color: #f44336; }
+
+        #question-text {
+            font-size: 1.8em; font-weight: bold;
+            color: #212121; margin-bottom: 25px;
+        }
+
+        /* --- Opsi Jawaban (BARU) --- */
+        #options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option-row {
+            display: grid;
+            grid-template-columns: 1fr 4fr 1fr; /* Tombol | Teks | Tombol */
+            align-items: center;
+            gap: 15px;
+        }
+        .option-text {
+            font-size: 1.3em;
+            text-align: left;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 2px solid #eee;
+            border-radius: 8px;
+        }
+        .option-btn {
+            font-size: 1.5em;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px 0;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-btn:hover { transform: scale(1.05); }
+        .option-btn:active { transform: scale(0.95); }
+        .option-btn.team-a { background-color: #d32f2f; }
+        .option-btn.team-b { background-color: #1976d2; }
+
+        /* --- Instruksi & Feedback --- */
+        #instructions {
+            margin-top: 15px; font-size: 1.1em; background: #e0e0e0;
+            padding: 10px; border-radius: 5px;
+        }
+        
+        #feedback-message {
+            font-size: 2.2em; font-weight: bold; margin-top: 20px;
+            padding: 15px; border-radius: 8px;
+            display: none; animation: fadeIn 0.3s;
+        }
+        #feedback-message.correct { background-color: #c8e6c9; color: #2e7d32; }
+        #feedback-message.incorrect { background-color: #ffcdd2; color: #c62828; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- Layar Kemenangan --- */
+        #win-message {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); display: none;
+            justify-content: center; align-items: center; flex-direction: column;
+            color: white; font-size: 4em; z-index: 100;
+        }
+        #win-message button {
+            font-size: 0.5em; padding: 20px 40px; margin-top: 30px;
+            cursor: pointer; border: none; border-radius: 10px;
+            background-color: #4CAF50; color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Perang Kardinalitas: Tarik Tambang ERD</h1>
+    <div class="team-names">
+        <span id="team-a">TIM A (MERAH)</span>
+        <span id="team-b">TIM B (BIRU)</span>
+    </div>
+    <div class="arena" id="game-arena">
+        <div class="step win-zone-a" data-step="0"></div>
+        <div class="step win-zone-a" data-step="1"></div>
+        <div class="step win-zone-a" data-step="2"></div>
+        <div class="step win-zone-a" data-step="3"></div>
+        <div class="step win-zone-a" data-step="4"></div>
+        <div class="step center" data-step="5"></div> <div class="step win-zone-b" data-step="6"></div>
+        <div class="step win-zone-b" data-step="7"></div>
+        <div class="step win-zone-b" data-step="8"></div>
+        <div class="step win-zone-b" data-step="9"></div>
+        <div class="step win-zone-b" data-step="10"></div>
+    </div>
+
+    <div id="instructions">
+        <strong>Tim A:</strong> [A, S, D, F] atau Tombol MERAH | <strong>Tim B:</strong> [J, K, L, ;] atau Tombol BIRU
+    </div>
+
+    <div id="quiz-container">
+        <div id="difficulty-indicator"></div>
+        <div id="question-text">Memuat pertanyaan...</div>
+        <div id="options-container">
+            </div>
+    </div>
+
+    <div id="feedback-message"></div>
+
+    <div id="win-message">
+        <span id="winner-text"></span>
+        <button onclick="resetGame()">MAIN LAGI</button>
+    </div>
+
+
+    <script>
+        // --- 1. BANK SOAL (TOTAL 20 SOAL) ---
+
+        // === SOAL MUDAH (12 SOAL, Tarikan 1 Langkah) ===
+        const easyQuestionBank = [
+            { q: "Simbol persegi panjang dalam ERD digunakan untuk...", o: ["Entitas", "Atribut", "Relasi", "Alur Data"], c: 0 },
+            { q: "Simbol *diamond* (belah ketupat) dalam ERD melambangkan...", o: ["Entitas Lemah", "Proses", "Relasi", "Atribut Key"], c: 2 },
+            { q: "Simbol oval/elips dalam ERD digunakan untuk merepresentasikan...", o: ["Atribut", "Entitas", "Proses", "Kardinalitas"], c: 0 },
+            { q: "Atribut yang nilainya unik dan tidak boleh sama disebut...", o: ["Atribut Komposit", "Primary Key", "Atribut Multivalue", "Foreign Key"], c: 1 },
+            { q: "Garis yang menghubungkan Entitas dan Relasi disebut...", o: ["Garis Atribut", "Garis Kardinalitas", "Garis Relasi", "Alur Data"], c: 2 },
+            { q: "Kardinalitas 1:1 berarti...", o: ["Satu ke banyak", "Banyak ke banyak", "Satu ke satu", "Banyak ke satu"], c: 2 },
+            { q: "Kardinalitas 1:M berarti...", o: ["Satu ke banyak", "Banyak ke banyak", "Satu ke satu", "Banyak ke satu"], c: 0 },
+            { q: "Contoh Primary Key yang paling tepat untuk entitas SISWA...", o: ["Nama_Siswa", "Alamat", "NISN", "Tgl_Lahir"], c: 2 },
+            { q: "Entitas yang dapat berdiri sendiri dan memiliki Primary Key...", o: ["Entitas Lemah", "Entitas Kuat", "Entitas Asosiatif", "Entitas Komposit"], c: 1 },
+            { q: "Kepanjangan dari ERD adalah...", o: ["External Data Record", "Entity Relationship Diagram", "Entitas Record Database", "E-Relationship Data"], c: 1 },
+            { q: "Satu SISWA bisa meminjam BANYAK Buku. Satu BUKU bisa dipinjam BANYAK Siswa. Kardinalitasnya?", o: ["1:1", "1:M", "M:1", "M:M"], c: 3 },
+            { q: "Atribut yang tidak dapat dipecah lagi menjadi bagian yang lebih kecil...", o: ["Atribut Sederhana (Atomik)", "Atribut Komposit", "Atribut Derivatif", "Atribut Multivalue"], c: 0 }
+        ];
+
+        // === SOAL SULIT (8 SOAL, Tarikan 2 Langkah) ===
+        const hardQuestionBank = [
+            { q: "Entitas yang keberadaannya bergantung pada entitas lain disebut...", o: ["Entitas Kuat", "Entitas Asosiatif", "Entitas Lemah (Weak Entity)", "Supertype"], c: 2 },
+            { q: "Atribut 'Alamat' (Jalan, Kota, Kodepos) adalah contoh...", o: ["Atribut Derivatif", "Atribut Komposit", "Atribut Multivalue", "Primary Key"], c: 1 },
+            { q: "Atribut 'Hobi' yang bisa diisi lebih dari satu nilai (cth: Membaca, Berenang)...", o: ["Atribut Derivatif", "Atribut Komposit", "Atribut Multivalue", "Foreign Key"], c: 2 },
+            { q: "Atribut 'Umur' yang nilainya dihitung dari 'Tgl_Lahir' adalah contoh...", o: ["Atribut Derivatif", "Atribut Komposit", "Atribut Multivalue", "Key"], c: 0 },
+            { q: "Relasi M:M antara SISWA dan MAPEL dipecah menjadi entitas 'NILAI'. Apa Primary Key dari 'NILAI'?", o: ["NISN", "Kode_Mapel", "Gabungan (NISN + Kode_Mapel)", "ID_Nilai (baru)"], c: 2 },
+            { q: "Relasi seorang KARYAWAN 'mengawasi' KARYAWAN lain (bawahan)...", o: ["Relasi Ternary", "Relasi Unary (Rekursif)", "Relasi Ganda", "Entitas Lemah"], c: 1 },
+            { q: "Sebuah kunci di satu tabel yang merujuk ke Primary Key di tabel lain...", o: ["Super Key", "Candidate Key", "Primary Key", "Foreign Key"], c: 3 },
+            { q: "Simbol oval dengan garis putus-putus dalam ERD melambangkan...", o: ["Atribut Komposit", "Atribut Derivatif", "Atribut Multivalue", "Foreign Key"], c: 1 }
+        ];
+
+
+        // --- 2. PENGATUR ARENA & GAME ---
+        const HARD_QUESTION_CHANCE = 0.3; // Peluang soal sulit 30%
+        let shuffledEasyQuestions = [];
+        let shuffledHardQuestions = [];
+        let currentQuestionIndexEasy = 0;
+        let currentQuestionIndexHard = 0;
+        let currentQuestion = {}; 
+        let currentQuestionDifficulty = 'easy';
+
+        const ropeMarker = '🪢';
+        const startPosition = 5;
+        const winPositionA = 0;
+        const winPositionB = 10;
+        let currentPosition = startPosition;
+        let gameActive = true;
+        let questionActive = true; // Mencegah jawaban ganda
+
+        // Referensi Elemen DOM
+        const allSteps = document.querySelectorAll('.step');
+        const winMessageEl = document.getElementById('win-message');
+        const winnerTextEl = document.getElementById('winner-text');
+        const difficultyEl = document.getElementById('difficulty-indicator'); 
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainerEl = document.getElementById('options-container');
+        const feedbackEl = document.getElementById('feedback-message');
+
+        // Pemetaan Keyboard
+        const teamAKeys = { 'a': 0, 's': 1, 'd': 2, 'f': 3 };
+        const teamBKeys = { 'j': 0, 'k': 1, 'l': 2, ';': 3 };
+
+        // --- 3. FUNGSI UTAMA GAME ---
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function resetGame() {
+            gameActive = true;
+            questionActive = true;
+            currentPosition = startPosition;
+            
+            shuffledEasyQuestions = [...easyQuestionBank];
+            shuffleArray(shuffledEasyQuestions);
+            currentQuestionIndexEasy = 0;
+            
+            shuffledHardQuestions = [...hardQuestionBank];
+            shuffleArray(shuffledHardQuestions);
+            currentQuestionIndexHard = 0;
+
+            updateRopeVisual();
+            loadQuestion();
+            
+            winMessageEl.style.display = 'none';
+            feedbackEl.style.display = 'none';
+        }
+
+        function loadQuestion() {
+            const isHard = Math.random() < HARD_QUESTION_CHANCE;
+
+            // Cek apakah soal sulit masih ada & terpilih
+            if (isHard && currentQuestionIndexHard < shuffledHardQuestions.length) {
+                currentQuestion = shuffledHardQuestions[currentQuestionIndexHard++];
+                currentQuestionDifficulty = 'hard';
+                difficultyEl.textContent = 'SOAL SULIT (Tarikan Ganda!)';
+                difficultyEl.className = 'difficulty-badge hard';
+            } else {
+                // Ambil soal mudah (juga jika soal sulit habis)
+                if (currentQuestionIndexEasy >= shuffledEasyQuestions.length) {
+                    currentQuestionIndexEasy = 0; // Ulangi bank soal mudah jika habis
+                }
+                currentQuestion = shuffledEasyQuestions[currentQuestionIndexEasy++];
+                currentQuestionDifficulty = 'easy';
+                difficultyEl.textContent = 'SOAL MUDAH (Tarikan 1 Langkah)';
+                difficultyEl.className = 'difficulty-badge easy';
+            }
+
+            // Tampilkan soal
+            questionTextEl.textContent = currentQuestion.q;
+            optionsContainerEl.innerHTML = ''; 
+            
+            // Render Tombol Sentuh
+            const optionLabels = ['A', 'B', 'C', 'D'];
+            currentQuestion.o.forEach((option, index) => {
+                const label = optionLabels[index];
+                
+                // Buat 1 baris opsi
+                const row = document.createElement('div');
+                row.className = 'option-row';
+                
+                // Tombol Tim A (Merah)
+                const btnA = document.createElement('button');
+                btnA.className = 'option-btn team-a';
+                btnA.textContent = label;
+                btnA.onclick = () => handleInput('A', index); // Klik sentuh
+                
+                // Teks Opsi
+                const text = document.createElement('div');
+                text.className = 'option-text';
+                text.textContent = `${label}. ${option}`;
+
+                // Tombol Tim B (Biru)
+                const btnB = document.createElement('button');
+                btnB.className = 'option-btn team-b';
+                btnB.textContent = label;
+                btnB.onclick = () => handleInput('B', index); // Klik sentuh
+
+                row.appendChild(btnA);
+                row.appendChild(text);
+                row.appendChild(btnB);
+                optionsContainerEl.appendChild(row);
+            });
+
+            questionActive = true; // Aktifkan soal
+            feedbackEl.style.display = 'none'; 
+        }
+
+        // Memproses Input (dari Keyboard)
+        function handleKeyPress(e) {
+            const key = e.key.toLowerCase();
+            let team = null;
+            let answeredIndex = -1;
+
+            if (key in teamAKeys) {
+                team = 'A';
+                answeredIndex = teamAKeys[key];
+            } else if (key in teamBKeys) {
+                team = 'B';
+                answeredIndex = teamBKeys[key];
+            }
+
+            if (team) {
+                handleInput(team, answeredIndex); // Kirim ke handler utama
+            }
+        }
+        
+        // Handler Utama (dipanggil keyboard atau sentuh)
+        function handleInput(team, index) {
+            if (!gameActive || !questionActive) return; // Stop jika sudah dijawab
+            
+            questionActive = false; // Kunci soal ini
+            checkAnswer(team, index);
+        }
+
+        // Cek Jawaban
+        function checkAnswer(team, index) {
+            const correctIndex = currentQuestion.c;
+            const teamName = (team === 'A') ? "Tim A" : "Tim B";
+
+            if (index === correctIndex) {
+                // --- JAWABAN BENAR ---
+                const pullAmount = (currentQuestionDifficulty === 'hard') ? 2 : 1;
+                const pullDirection = (team === 'A') ? -1 : 1;
+                
+                const feedbackMessage = (pullAmount === 2) ? 
+                    `${teamName} BENAR! Tarikan Ganda!` : 
+                    `${teamName} BENAR! Menarik tambang...`;
+                
+                showFeedback(feedbackMessage, true);
+                moveRope(pullDirection * pullAmount);
+
+            } else {
+                // --- JAWABAN SALAH (Jawaban benar tidak ditampilkan) ---
+                showFeedback(`${teamName} SALAH! Tidak ada tarikan.`, false);
+            }
+
+            // Lanjut ke soal berikutnya
+            if (gameActive) {
+                setTimeout(loadQuestion, 2000); // Jeda 2 detik
+            }
+        }
+
+        function showFeedback(message, isCorrect) {
+            feedbackEl.textContent = message;
+            feedbackEl.className = isCorrect ? 'correct' : 'incorrect';
+            feedbackEl.style.display = 'block';
+        }
+
+        function moveRope(steps) {
+            currentPosition += steps; 
+            if (currentPosition < winPositionA) currentPosition = winPositionA;
+            if (currentPosition > winPositionB) currentPosition = winPositionB;
+            updateRopeVisual();
+            checkWinCondition();
+        }
+
+        function updateRopeVisual() {
+            allSteps.forEach(step => step.innerHTML = '');
+            const currentStepEl = document.querySelector(`.step[data-step="${currentPosition}"]`);
+            if (currentStepEl) {
+                currentStepEl.innerHTML = `<span class="rope">${ropeMarker}</span>`;
+            }
+        }
+
+        function checkWinCondition() {
+            if (currentPosition === winPositionA) {
+                showWin('TIM A');
+            } else if (currentPosition === winPositionB) {
+                showWin('TIM B');
+            }
+        }
+
+        function showWin(teamName) {
+            gameActive = false;
+            winnerTextEl.textContent = `${teamName} MENANG! 🎉`;
+            winMessageEl.style.color = (teamName === 'A') ? '#d32f2f' : '#1976d2';
+            winMessageEl.style.display = 'flex';
+        }
+
+        // --- 4. MULAI GAME ---
+        document.addEventListener('DOMContentLoaded', resetGame);
+        document.addEventListener('keydown', handleKeyPress); // Tetap mendengarkan keyboard
+
+    </script>
+</body>
+</html>
