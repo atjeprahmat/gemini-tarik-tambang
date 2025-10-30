@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena Tarik Tambang ERD v6.0 (Adu Cepat + Sentuh)</title>
+    <title>Arena Tarik Tambang ERD v6.3 (Responsif)</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f0f4f8;
             color: #333;
             text-align: center;
             padding: 20px;
-            overflow: hidden;
+            overflow-x: hidden; /* Mencegah scroll horizontal */
         }
 
         h1 { color: #0d47a1; margin-top: 0; }
@@ -38,7 +42,7 @@
         }
         .step {
             flex: 1; height: 80px; border-right: 2px dotted #ccc;
-            box-sizing: border-box; display: flex;
+            display: flex;
             justify-content: center; align-items: center;
             font-size: 2.5em; transition: background-color 0.3s;
         }
@@ -62,7 +66,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             width: 90%;
             margin: 20px auto;
-            min-height: 400px; /* Lebih tinggi untuk 4 baris tombol */
+            min-height: 400px;
         }
         
         #difficulty-indicator {
@@ -78,7 +82,7 @@
             color: #212121; margin-bottom: 25px;
         }
 
-        /* --- Opsi Jawaban (BARU) --- */
+        /* --- Opsi Jawaban (Layout Desktop) --- */
         #options-container {
             display: flex;
             flex-direction: column;
@@ -86,9 +90,12 @@
         }
         .option-row {
             display: grid;
-            grid-template-columns: 1fr 4fr 1fr; /* Tombol | Teks | Tombol */
+            /* Inilah layout desktop: Tombol Merah | Teks | Tombol Biru */
+            grid-template-columns: 1fr 4fr 1fr; 
             align-items: center;
             gap: 15px;
+            /* Menyiapkan area untuk responsive */
+            grid-template-areas: "btnA text btnB";
         }
         .option-text {
             font-size: 1.3em;
@@ -97,6 +104,7 @@
             background-color: #f9f9f9;
             border: 2px solid #eee;
             border-radius: 8px;
+            grid-area: text; /* Menempati area 'text' */
         }
         .option-btn {
             font-size: 1.5em;
@@ -111,8 +119,17 @@
         }
         .option-btn:hover { transform: scale(1.05); }
         .option-btn:active { transform: scale(0.95); }
-        .option-btn.team-a { background-color: #d32f2f; }
-        .option-btn.team-b { background-color: #1976d2; }
+        
+        /* Tombol Tim A (Merah) di area 'btnA' */
+        .option-btn.team-a { 
+            background-color: #d32f2f; 
+            grid-area: btnA; 
+        }
+        /* Tombol Tim B (Biru) di area 'btnB' */
+        .option-btn.team-b { 
+            background-color: #1976d2; 
+            grid-area: btnB; 
+        }
 
         /* --- Instruksi & Feedback --- */
         #instructions {
@@ -145,6 +162,64 @@
             cursor: pointer; border: none; border-radius: 10px;
             background-color: #4CAF50; color: white;
         }
+
+        /* === GAYA RESPONSIVE UNTUK HP/TABLET === */
+        /* Ini akan aktif jika lebar layar 768px ke bawah */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px; /* Kurangi padding di HP */
+            }
+            h1 {
+                font-size: 1.6em; /* Kecilkan judul */
+            }
+            .team-names {
+                font-size: 1.1em;
+            }
+            .arena, #quiz-container {
+                width: 100%; /* Gunakan lebar penuh */
+            }
+            .step {
+                height: 50px; /* Kecilkan arena tali */
+                font-size: 1.8em;
+            }
+            #instructions.keyboard-instructions {
+                display: none; /* Sembunyikan instruksi keyboard di HP */
+            }
+            #question-text {
+                font-size: 1.3em; /* Kecilkan font soal */
+            }
+            #quiz-container {
+                min-height: auto;
+                padding: 15px;
+            }
+
+            /* Perubahan Layout Tombol Utama di HP */
+            .option-row {
+                /* Ubah layout: Teks di atas, Tombol di bawah */
+                grid-template-columns: 1fr 1fr; /* 2 kolom untuk tombol */
+                grid-template-areas: 
+                    "text text"
+                    "btnA btnB";
+                gap: 10px;
+            }
+            .option-text {
+                text-align: center; /* Teks jadi di tengah */
+                font-size: 1.1em;
+                padding: 12px;
+            }
+            .option-btn {
+                font-size: 1.2em; /* Kecilkan tombol */
+                padding: 18px 0;
+            }
+
+            #feedback-message {
+                font-size: 1.5em; /* Kecilkan feedback */
+            }
+            #win-message {
+                font-size: 2em; /* Kecilkan layar menang */
+            }
+        }
+        
     </style>
 </head>
 <body>
@@ -167,7 +242,7 @@
         <div class="step win-zone-b" data-step="10"></div>
     </div>
 
-    <div id="instructions">
+    <div id="instructions" class="keyboard-instructions">
         <strong>Tim A:</strong> [A, S, D, F] atau Tombol MERAH | <strong>Tim B:</strong> [J, K, L, ;] atau Tombol BIRU
     </div>
 
@@ -218,8 +293,8 @@
         ];
 
 
-        // --- 2. PENGATUR ARENA & GAME ---
-        const HARD_QUESTION_CHANCE = 0.3; // Peluang soal sulit 30%
+        // --- 2. PENGATUR ARENA & GAME (Tidak ada perubahan di JS) ---
+        const HARD_QUESTION_CHANCE = 0.3; 
         let shuffledEasyQuestions = [];
         let shuffledHardQuestions = [];
         let currentQuestionIndexEasy = 0;
@@ -233,9 +308,8 @@
         const winPositionB = 10;
         let currentPosition = startPosition;
         let gameActive = true;
-        let questionActive = true; // Mencegah jawaban ganda
+        let questionActive = true; 
 
-        // Referensi Elemen DOM
         const allSteps = document.querySelectorAll('.step');
         const winMessageEl = document.getElementById('win-message');
         const winnerTextEl = document.getElementById('winner-text');
@@ -244,11 +318,10 @@
         const optionsContainerEl = document.getElementById('options-container');
         const feedbackEl = document.getElementById('feedback-message');
 
-        // Pemetaan Keyboard
         const teamAKeys = { 'a': 0, 's': 1, 'd': 2, 'f': 3 };
         const teamBKeys = { 'j': 0, 'k': 1, 'l': 2, ';': 3 };
 
-        // --- 3. FUNGSI UTAMA GAME ---
+        // --- 3. FUNGSI UTAMA GAME (Tidak ada perubahan di JS) ---
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -280,16 +353,14 @@
         function loadQuestion() {
             const isHard = Math.random() < HARD_QUESTION_CHANCE;
 
-            // Cek apakah soal sulit masih ada & terpilih
             if (isHard && currentQuestionIndexHard < shuffledHardQuestions.length) {
                 currentQuestion = shuffledHardQuestions[currentQuestionIndexHard++];
                 currentQuestionDifficulty = 'hard';
                 difficultyEl.textContent = 'SOAL SULIT (Tarikan Ganda!)';
                 difficultyEl.className = 'difficulty-badge hard';
             } else {
-                // Ambil soal mudah (juga jika soal sulit habis)
                 if (currentQuestionIndexEasy >= shuffledEasyQuestions.length) {
-                    currentQuestionIndexEasy = 0; // Ulangi bank soal mudah jika habis
+                    currentQuestionIndexEasy = 0; 
                 }
                 currentQuestion = shuffledEasyQuestions[currentQuestionIndexEasy++];
                 currentQuestionDifficulty = 'easy';
@@ -297,16 +368,13 @@
                 difficultyEl.className = 'difficulty-badge easy';
             }
 
-            // Tampilkan soal
             questionTextEl.textContent = currentQuestion.q;
             optionsContainerEl.innerHTML = ''; 
             
-            // Render Tombol Sentuh
             const optionLabels = ['A', 'B', 'C', 'D'];
             currentQuestion.o.forEach((option, index) => {
                 const label = optionLabels[index];
                 
-                // Buat 1 baris opsi
                 const row = document.createElement('div');
                 row.className = 'option-row';
                 
@@ -314,7 +382,7 @@
                 const btnA = document.createElement('button');
                 btnA.className = 'option-btn team-a';
                 btnA.textContent = label;
-                btnA.onclick = () => handleInput('A', index); // Klik sentuh
+                btnA.onclick = () => handleInput('A', index); 
                 
                 // Teks Opsi
                 const text = document.createElement('div');
@@ -325,7 +393,7 @@
                 const btnB = document.createElement('button');
                 btnB.className = 'option-btn team-b';
                 btnB.textContent = label;
-                btnB.onclick = () => handleInput('B', index); // Klik sentuh
+                btnB.onclick = () => handleInput('B', index); 
 
                 row.appendChild(btnA);
                 row.appendChild(text);
@@ -333,11 +401,10 @@
                 optionsContainerEl.appendChild(row);
             });
 
-            questionActive = true; // Aktifkan soal
+            questionActive = true; 
             feedbackEl.style.display = 'none'; 
         }
 
-        // Memproses Input (dari Keyboard)
         function handleKeyPress(e) {
             const key = e.key.toLowerCase();
             let team = null;
@@ -352,27 +419,24 @@
             }
 
             if (team) {
-                handleInput(team, answeredIndex); // Kirim ke handler utama
+                handleInput(team, answeredIndex); 
             }
         }
         
-        // Handler Utama (dipanggil keyboard atau sentuh)
         function handleInput(team, index) {
-            if (!gameActive || !questionActive) return; // Stop jika sudah dijawab
+            if (!gameActive || !questionActive) return; 
             
-            questionActive = false; // Kunci soal ini
+            questionActive = false; 
             checkAnswer(team, index);
         }
 
-        // Cek Jawaban
         function checkAnswer(team, index) {
             const correctIndex = currentQuestion.c;
             const teamName = (team === 'A') ? "Tim A" : "Tim B";
 
             if (index === correctIndex) {
-                // --- JAWABAN BENAR ---
                 const pullAmount = (currentQuestionDifficulty === 'hard') ? 2 : 1;
-                const pullDirection = (team === 'A') ? -1 : 1;
+                const pullDirection = (team === 'A') ? -1 : 1; // -1 untuk A, 1 untuk B
                 
                 const feedbackMessage = (pullAmount === 2) ? 
                     `${teamName} BENAR! Tarikan Ganda!` : 
@@ -382,17 +446,16 @@
                 moveRope(pullDirection * pullAmount);
 
             } else {
-                // --- JAWABAN SALAH (Jawaban benar tidak ditampilkan) ---
                 showFeedback(`${teamName} SALAH! Tidak ada tarikan.`, false);
             }
 
-            // Lanjut ke soal berikutnya
             if (gameActive) {
-                setTimeout(loadQuestion, 2000); // Jeda 2 detik
+                setTimeout(loadQuestion, 2000); 
             }
         }
 
         function showFeedback(message, isCorrect) {
+            // (Memperbaiki typo dari v6.1)
             feedbackEl.textContent = message;
             feedbackEl.className = isCorrect ? 'correct' : 'incorrect';
             feedbackEl.style.display = 'block';
@@ -431,7 +494,7 @@
 
         // --- 4. MULAI GAME ---
         document.addEventListener('DOMContentLoaded', resetGame);
-        document.addEventListener('keydown', handleKeyPress); // Tetap mendengarkan keyboard
+        document.addEventListener('keydown', handleKeyPress); 
 
     </script>
 </body>
